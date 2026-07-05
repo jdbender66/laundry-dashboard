@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧺 Laundry Dashboard — 114 Troutman St</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232636;
+    --accent: #6c8ebf;
+    --accent2: #7ec8b0;
+    --accent3: #e87d6b;
+    --accent4: #c48fd6;
+    --text: #e8eaf0;
+    --muted: #8a8fa8;
+    --border: #2a2d3e;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 28px 24px; }
+  h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin-bottom: 3px; }
+  .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+  .grid { display: grid; gap: 14px; }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g21 { grid-template-columns: 2fr 1fr; }
+  .g12 { grid-template-columns: 1fr 2fr; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .stat { font-size: 2.3rem; font-weight: 700; line-height: 1; color: #fff; }
+  .stat-sm { font-size: 1.7rem; font-weight: 700; line-height: 1; color: #fff; }
+  .stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+  .green { color: var(--accent2); }
+  .blue { color: var(--accent); }
+  .red { color: var(--accent3); }
+  .purple { color: var(--accent4); }
+  .section { font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 26px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .chart-h240 { position: relative; height: 240px; }
+  .chart-h260 { position: relative; height: 260px; }
+  .chart-h200 { position: relative; height: 200px; }
+  /* Heatmap */
+  .hm-wrap { overflow-x: auto; }
+  .hm-grid { display: grid; grid-template-columns: 52px repeat(7, 1fr); gap: 3px; min-width: 500px; }
+  .hm-hdr { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; padding: 4px 0; }
+  .hm-lbl { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+  .hm-cell { border-radius: 5px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,0.9); cursor: default; transition: transform .12s; }
+  .hm-cell:hover { transform: scale(1.12); z-index: 1; }
+  /* Tables */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .tbl th { text-align: left; color: var(--muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  .tbl td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  /* Mini bar */
+  .bar-bg { background: var(--border); border-radius: 4px; height: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  /* Badges */
+  .badge { display: inline-block; font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .b-gold { background: rgba(255,193,7,.15); color: #ffd54f; }
+  .b-blue { background: rgba(108,142,191,.15); color: var(--accent); }
+  .b-green { background: rgba(126,200,176,.15); color: var(--accent2); }
+  .b-red { background: rgba(232,125,107,.15); color: var(--accent3); }
+  .b-purple { background: rgba(196,143,214,.15); color: var(--accent4); }
+  .b-gray { background: rgba(255,255,255,.06); color: var(--muted); }
+  /* Two stat */
+  .two-stat { display: flex; gap: 12px; margin: 10px 0; }
+  .ts-item { flex: 1; background: var(--surface2); border-radius: 10px; padding: 14px 12px; text-align: center; }
+  .ts-val { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .ts-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; line-height: 1.3; }
+  /* Topoff rows */
+  .to-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+  .to-row:last-child { border-bottom: none; }
+  .to-lbl { width: 120px; color: var(--muted); font-size: 0.78rem; }
+  .to-bar { flex: 1; }
+  .to-cnt { width: 28px; text-align: right; font-weight: 600; }
+  /* Search inputs */
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  input[type=text], select {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 8px 12px; font-size: 0.83rem; outline: none;
+    font-family: inherit;
+  }
+  input[type=text] { flex: 1; min-width: 160px; }
+  .hint { font-size: 0.72rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
+  @media (max-width: 900px) {
+    .g4 { grid-template-columns: repeat(2, 1fr); }
+    .g3, .g21, .g12 { grid-template-columns: 1fr; }
+    .g2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🧺 Laundry Dashboard</h1>
+<p class="subtitle">114 Troutman St, Brooklyn &nbsp;·&nbsp; March 29 2023 – March 25 2026 &nbsp;·&nbsp; All times in Eastern Time</p>
+
+<!-- STAT CARDS -->
+<div class="grid g4" style="margin-bottom:14px">
+  <div class="card">
+    <div class="card-label">Total Funds Added</div>
+    <div class="stat green">$740</div>
+    <div class="stat-sub">across 32 top-ups</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Laundry Sessions</div>
+    <div class="stat blue">68</div>
+    <div class="stat-sub">~1.7 per month</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Individual Charges</div>
+    <div class="stat">725</div>
+    <div class="stat-sub">machine transactions</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Avg. Dryer Run</div>
+    <div class="stat purple">94 min</div>
+    <div class="stat-sub">per machine per session</div>
+  </div>
+</div>
+
+<!-- WHEN DO YOU DO LAUNDRY -->
+<div class="section">📅 When Do You Do Laundry?</div>
+<div class="grid g2" style="margin-bottom:14px">
+  <div class="card">
+    <div class="card-label">Sessions by Day of Week</div>
+    <div class="chart-h240"><canvas id="dayChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Sessions by Hour (Eastern Time)</div>
+    <div class="chart-h240"><canvas id="hourChart"></canvas></div>
+  </div>
+</div>
+<div class="card" style="margin-bottom:14px">
+  <div class="card-label" style="margin-bottom:12px">Day × Hour Heatmap</div>
+  <div class="hm-wrap">
+    <div class="hm-grid" id="heatmap"></div>
+  </div>
+  <p class="hint" style="margin-top:8px">Darker blue = more sessions at that time. Hover for exact count.</p>
+</div>
+
+<!-- WASHER STATS -->
+<div class="section">🫧 Washer Stats</div>
+<div class="grid g12" style="margin-bottom:14px">
+  <div class="card">
+    <div class="card-label">Wash Type</div>
+    <div class="two-stat">
+      <div class="ts-item">
+        <div class="ts-val blue">94</div>
+        <div class="ts-lbl">Normal Washes<br>@ $2.50</div>
+      </div>
+      <div class="ts-item">
+        <div class="ts-val red">44</div>
+        <div class="ts-lbl">Powerwashes<br>@ $3.00</div>
+      </div>
+    </div>
+    <div class="chart-h200"><canvas id="washTypeChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Washer Usage — All 10 Machines</div>
+    <div class="chart-h260"><canvas id="washerChart"></canvas></div>
+    <p class="hint" style="margin-top:6px">Washer 02 & 03 are tied at 21 uses each.</p>
+  </div>
+</div>
+
+<!-- DRYER STATS -->
+<div class="section">♨️ Dryer Stats</div>
+<div class="grid g2" style="margin-bottom:14px">
+  <div class="card">
+    <div class="card-label">Dryer Usage — All 6 Machines</div>
+    <div class="chart-h260"><canvas id="dryerChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Top-Offs per Dryer Session</div>
+    <p class="hint">$1.75 base = 56 min &nbsp;·&nbsp; each $0.25 top-off = +6 min</p>
+    <div id="topoffRows"></div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border); display:flex; align-items:baseline; gap:10px">
+      <div>
+        <div class="card-label">Average dryer time per run</div>
+        <div class="stat-sm purple">~94 min <span style="font-size:1rem; font-weight:400; color:var(--muted)">(1 hr 34 min)</span></div>
+        <div class="stat-sub">Most common: 3 top-offs → 74 min (47 sessions)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOAD SIZE + MACHINE PREFS -->
+<div class="section">📦 Load Size &amp; Machine Preferences</div>
+<div class="grid g3" style="margin-bottom:14px">
+  <div class="card">
+    <div class="card-label">Load Size Distribution</div>
+    <p class="hint">Based on # of washers per session</p>
+    <div class="chart-h200"><canvas id="loadChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-label">🏆 Favorite Washer</div>
+    <div class="stat-sm blue" style="margin:8px 0 2px">Washer 02 / 03</div>
+    <div class="stat-sub" style="margin-bottom:14px">Tied at 21 uses each</div>
+    <div class="card-label">All Washers</div>
+    <table class="tbl" id="washerTbl"></table>
+  </div>
+  <div class="card">
+    <div class="card-label">🏆 Favorite Dryer</div>
+    <div class="stat-sm purple" style="margin:8px 0 2px">Dryer 13</div>
+    <div class="stat-sub" style="margin-bottom:14px">136 individual charges — clear #1</div>
+    <div class="card-label">All Dryers</div>
+    <table class="tbl" id="dryerTbl"></table>
+  </div>
+</div>
+
+<!-- SESSION LOG -->
+<div class="section">🗓 Session Log</div>
+<div class="card" style="margin-bottom:28px">
+  <div class="search-row">
+    <input id="searchBox" type="text" placeholder="Search date, machine, day…">
+    <select id="loadFilter">
+      <option value="">All Load Sizes</option>
+      <option value="Small">Small (1 washer)</option>
+      <option value="Medium">Medium (2 washers)</option>
+      <option value="Large">Large (3–4 washers)</option>
+      <option value="Dryer Only">Dryer Only</option>
+    </select>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Date</th><th>Day</th><th>Start (ET)</th><th>Load</th><th>Washers</th><th>Dryers</th><th>Spent</th>
+        </tr>
+      </thead>
+      <tbody id="sessionRows"></tbody>
+    </table>
+  </div>
+  <div id="sessionCount" style="color:var(--muted); font-size:0.78rem; margin-top:10px"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const D = {
+  totalAdded: 740,
+  numTopups: 32,
+  totalSessions: 68,
+  normalWashes: 94,
+  powerWashes: 44,
+  avgDryerMin: 93.7,
+
+  dayCounts: {"Sunday":32,"Monday":5,"Tuesday":10,"Wednesday":7,"Thursday":5,"Friday":6,"Saturday":3},
+  hourCounts: {"9":1,"11":11,"12":6,"13":6,"14":7,"15":6,"16":5,"17":8,"18":10,"19":7,"20":1},
+
+  washerCounts: {"Washer 01":17,"Washer 02":21,"Washer 03":21,"Washer 04":16,"Washer 05":10,"Washer 06":13,"Washer 07":11,"Washer 08":10,"Washer 09":10,"Washer 10":10},
+  dryerCounts: {"Dryer 11":99,"Dryer 12":103,"Dryer 13":136,"Dryer 14":81,"Dryer 15":94,"Stack Dryer 14":74},
+
+  loadCounts: {"Small":19,"Medium":28,"Large":20,"Dryer Only":1},
+  topoffDist: {"0":4,"1":3,"2":17,"3":47,"4":27,"5":1,"6":6,"8":7,"9":3,"10":1,"16":1},
+
+  sessions: [{"date":"2023-03-29","start_time":"11:52 AM ET","day_of_week":"Wednesday","hour":11,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 10"],"dryers_used":["Dryer 11"],"total_spent":2.25},{"date":"2023-04-02","start_time":"07:06 PM ET","day_of_week":"Sunday","hour":19,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 10"],"dryers_used":["Dryer 11"],"total_spent":4.75},{"date":"2023-04-18","start_time":"11:45 AM ET","day_of_week":"Tuesday","hour":11,"num_washers":3,"num_dryers":4,"load_size":"Large","washers_used":["Washer 01","Washer 02","Washer 03"],"dryers_used":["Dryer 11","Dryer 12","Dryer 13","Dryer 14"],"total_spent":17.0},{"date":"2023-05-07","start_time":"05:05 PM ET","day_of_week":"Sunday","hour":17,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 01"],"dryers_used":["Dryer 12"],"total_spent":5.0},{"date":"2023-06-04","start_time":"05:16 PM ET","day_of_week":"Sunday","hour":17,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 09","Washer 10"],"dryers_used":["Dryer 11"],"total_spent":10.0},{"date":"2023-07-03","start_time":"01:24 PM ET","day_of_week":"Monday","hour":13,"num_washers":2,"num_dryers":3,"load_size":"Medium","washers_used":["Washer 01","Washer 02"],"dryers_used":["Dryer 11","Dryer 12","Dryer 14"],"total_spent":11.75},{"date":"2023-07-18","start_time":"02:22 PM ET","day_of_week":"Tuesday","hour":14,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 01","Washer 02","Washer 05"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":14.25},{"date":"2023-07-30","start_time":"07:45 PM ET","day_of_week":"Sunday","hour":19,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 08"],"dryers_used":["Dryer 12"],"total_spent":5.0},{"date":"2023-08-09","start_time":"12:04 PM ET","day_of_week":"Wednesday","hour":12,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 07"],"dryers_used":["Dryer 13"],"total_spent":5.0},{"date":"2023-08-15","start_time":"12:22 PM ET","day_of_week":"Tuesday","hour":12,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 09","Washer 10"],"dryers_used":["Dryer 11"],"total_spent":9.0},{"date":"2023-09-12","start_time":"04:44 PM ET","day_of_week":"Tuesday","hour":16,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 05"],"dryers_used":["Dryer 12"],"total_spent":4.75},{"date":"2023-10-17","start_time":"11:41 AM ET","day_of_week":"Tuesday","hour":11,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 09","Washer 10"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":10.0},{"date":"2023-12-09","start_time":"01:59 PM ET","day_of_week":"Saturday","hour":13,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 01","Washer 02","Washer 03"],"dryers_used":["Dryer 13","Dryer 14","Dryer 15"],"total_spent":17.0},{"date":"2024-01-02","start_time":"06:38 PM ET","day_of_week":"Tuesday","hour":18,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 03"],"dryers_used":["Dryer 15"],"total_spent":6.25},{"date":"2024-01-14","start_time":"07:19 PM ET","day_of_week":"Sunday","hour":19,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 03"],"dryers_used":["Dryer 13"],"total_spent":5.25},{"date":"2024-02-11","start_time":"03:26 PM ET","day_of_week":"Sunday","hour":15,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 04","Washer 05"],"dryers_used":["Dryer 14"],"total_spent":10.0},{"date":"2024-02-22","start_time":"05:02 PM ET","day_of_week":"Thursday","hour":17,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 04","Washer 05"],"dryers_used":["Dryer 14"],"total_spent":7.5},{"date":"2024-03-10","start_time":"03:32 PM ET","day_of_week":"Sunday","hour":15,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 01","Washer 03","Washer 04"],"dryers_used":["Dryer 11","Dryer 12","Dryer 15"],"total_spent":14.0},{"date":"2024-03-20","start_time":"05:15 PM ET","day_of_week":"Wednesday","hour":17,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 03"],"dryers_used":["Dryer 13"],"total_spent":4.75},{"date":"2024-04-14","start_time":"04:06 PM ET","day_of_week":"Sunday","hour":16,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 01","Washer 06","Washer 10"],"dryers_used":["Dryer 12","Dryer 13"],"total_spent":12.5},{"date":"2024-04-29","start_time":"07:28 PM ET","day_of_week":"Monday","hour":19,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 01","Washer 02"],"dryers_used":["Dryer 14","Dryer 15"],"total_spent":9.25},{"date":"2024-05-12","start_time":"02:22 PM ET","day_of_week":"Sunday","hour":14,"num_washers":2,"num_dryers":3,"load_size":"Medium","washers_used":["Washer 03","Washer 08"],"dryers_used":["Dryer 11","Dryer 12","Dryer 13"],"total_spent":12.5},{"date":"2024-05-27","start_time":"07:39 PM ET","day_of_week":"Monday","hour":19,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 02","Washer 05"],"dryers_used":["Dryer 14"],"total_spent":9.5},{"date":"2024-06-02","start_time":"01:05 PM ET","day_of_week":"Sunday","hour":13,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 02","Washer 03"],"dryers_used":["Dryer 14","Dryer 15"],"total_spent":9.75},{"date":"2024-06-23","start_time":"02:10 PM ET","day_of_week":"Sunday","hour":14,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 01","Washer 02","Washer 06"],"dryers_used":["Dryer 12","Dryer 13","Dryer 15"],"total_spent":15.0},{"date":"2024-07-05","start_time":"12:06 PM ET","day_of_week":"Friday","hour":12,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 06"],"dryers_used":["Dryer 15"],"total_spent":5.0},{"date":"2024-07-11","start_time":"03:10 PM ET","day_of_week":"Thursday","hour":15,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 02","Washer 03"],"dryers_used":["Dryer 14","Dryer 15"],"total_spent":10.0},{"date":"2024-07-18","start_time":"09:59 AM ET","day_of_week":"Thursday","hour":9,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 02"],"dryers_used":["Dryer 14"],"total_spent":4.75},{"date":"2024-07-28","start_time":"07:08 PM ET","day_of_week":"Sunday","hour":19,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 02","Washer 03"],"dryers_used":["Dryer 13","Dryer 15"],"total_spent":9.5},{"date":"2024-08-11","start_time":"05:59 PM ET","day_of_week":"Sunday","hour":17,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 01","Washer 07","Washer 09"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":14.75},{"date":"2024-08-13","start_time":"06:20 PM ET","day_of_week":"Tuesday","hour":18,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 01","Washer 02"],"dryers_used":["Dryer 14"],"total_spent":9.75},{"date":"2024-08-18","start_time":"03:47 PM ET","day_of_week":"Sunday","hour":15,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 02"],"dryers_used":["Dryer 14"],"total_spent":5.25},{"date":"2024-09-22","start_time":"06:11 PM ET","day_of_week":"Sunday","hour":18,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 02","Washer 04"],"dryers_used":["Dryer 12","Dryer 13"],"total_spent":10.0},{"date":"2024-10-04","start_time":"12:39 PM ET","day_of_week":"Friday","hour":12,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 03"],"dryers_used":["Dryer 12"],"total_spent":5.0},{"date":"2024-10-26","start_time":"04:16 PM ET","day_of_week":"Saturday","hour":16,"num_washers":2,"num_dryers":3,"load_size":"Medium","washers_used":["Washer 01","Washer 03"],"dryers_used":["Dryer 12","Dryer 14","Dryer 15"],"total_spent":13.0},{"date":"2024-11-05","start_time":"06:47 PM ET","day_of_week":"Tuesday","hour":18,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 05"],"dryers_used":["Dryer 13"],"total_spent":5.25},{"date":"2024-11-24","start_time":"06:02 PM ET","day_of_week":"Sunday","hour":18,"num_washers":3,"num_dryers":1,"load_size":"Large","washers_used":["Washer 01","Washer 06","Washer 08"],"dryers_used":["Dryer 11"],"total_spent":15.0},{"date":"2025-01-05","start_time":"05:41 PM ET","day_of_week":"Sunday","hour":17,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 01"],"dryers_used":["Dryer 12"],"total_spent":5.0},{"date":"2025-01-19","start_time":"01:21 PM ET","day_of_week":"Sunday","hour":13,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 03","Washer 04","Washer 06"],"dryers_used":["Dryer 12","Dryer 13","Dryer 14"],"total_spent":14.75},{"date":"2025-02-05","start_time":"06:30 PM ET","day_of_week":"Wednesday","hour":18,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 03","Washer 04","Washer 05"],"dryers_used":["Dryer 12","Dryer 13","Dryer 14"],"total_spent":15.0},{"date":"2025-02-09","start_time":"02:32 PM ET","day_of_week":"Sunday","hour":14,"num_washers":4,"num_dryers":2,"load_size":"Large","washers_used":["Washer 01","Washer 02","Washer 03","Washer 04"],"dryers_used":["Dryer 13","Dryer 14"],"total_spent":22.25},{"date":"2025-02-23","start_time":"01:18 PM ET","day_of_week":"Sunday","hour":13,"num_washers":2,"num_dryers":3,"load_size":"Medium","washers_used":["Washer 01","Washer 02"],"dryers_used":["Dryer 11","Dryer 13","Dryer 15"],"total_spent":12.0},{"date":"2025-03-23","start_time":"11:53 AM ET","day_of_week":"Sunday","hour":11,"num_washers":3,"num_dryers":3,"load_size":"Large","washers_used":["Washer 05","Washer 09","Washer 10"],"dryers_used":["Dryer 11","Dryer 12","Dryer 13"],"total_spent":15.75},{"date":"2025-03-30","start_time":"08:09 PM ET","day_of_week":"Sunday","hour":20,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 05"],"dryers_used":["Dryer 15"],"total_spent":5.0},{"date":"2025-04-27","start_time":"04:51 PM ET","day_of_week":"Sunday","hour":16,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 01","Washer 02"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":12.5},{"date":"2025-05-04","start_time":"07:54 PM ET","day_of_week":"Sunday","hour":19,"num_washers":2,"num_dryers":3,"load_size":"Medium","washers_used":["Washer 07","Washer 08"],"dryers_used":["Dryer 12","Dryer 13","Dryer 15"],"total_spent":11.75},{"date":"2025-05-19","start_time":"06:00 PM ET","day_of_week":"Monday","hour":18,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 07","Washer 08","Washer 10"],"dryers_used":["Dryer 12","Dryer 13"],"total_spent":12.5},{"date":"2025-06-08","start_time":"02:57 PM ET","day_of_week":"Sunday","hour":14,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 07","Washer 08"],"dryers_used":["Dryer 12","Dryer 13"],"total_spent":10.0},{"date":"2025-07-06","start_time":"11:39 AM ET","day_of_week":"Sunday","hour":11,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 02","Washer 03","Washer 07"],"dryers_used":["Dryer 15","Stack Dryer 14"],"total_spent":17.25},{"date":"2025-07-13","start_time":"06:07 PM ET","day_of_week":"Sunday","hour":18,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 04","Washer 08"],"dryers_used":["Dryer 13","Dryer 15"],"total_spent":11.0},{"date":"2025-08-10","start_time":"12:46 PM ET","day_of_week":"Sunday","hour":12,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 06","Washer 07"],"dryers_used":["Stack Dryer 14"],"total_spent":11.5},{"date":"2025-08-17","start_time":"02:45 PM ET","day_of_week":"Sunday","hour":14,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 03","Washer 04"],"dryers_used":["Stack Dryer 14"],"total_spent":8.0},{"date":"2025-09-21","start_time":"05:05 PM ET","day_of_week":"Sunday","hour":17,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 02","Washer 04","Washer 06"],"dryers_used":["Dryer 15","Stack Dryer 14"],"total_spent":18.0},{"date":"2025-10-03","start_time":"11:14 AM ET","day_of_week":"Friday","hour":11,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 04","Washer 07","Washer 08"],"dryers_used":["Dryer 12","Dryer 13"],"total_spent":17.75},{"date":"2025-10-31","start_time":"11:32 AM ET","day_of_week":"Friday","hour":11,"num_washers":4,"num_dryers":2,"load_size":"Large","washers_used":["Washer 02","Washer 03","Washer 04","Washer 10"],"dryers_used":["Dryer 11","Stack Dryer 14"],"total_spent":23.25},{"date":"2025-11-10","start_time":"11:49 AM ET","day_of_week":"Monday","hour":11,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 09"],"dryers_used":["Dryer 13"],"total_spent":5.75},{"date":"2025-11-21","start_time":"11:14 AM ET","day_of_week":"Friday","hour":11,"num_washers":4,"num_dryers":2,"load_size":"Large","washers_used":["Washer 03","Washer 06","Washer 07","Washer 09"],"dryers_used":["Dryer 12","Stack Dryer 14"],"total_spent":18.5},{"date":"2025-12-20","start_time":"06:56 PM ET","day_of_week":"Saturday","hour":18,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 08","Washer 09"],"dryers_used":["Dryer 13","Stack Dryer 14"],"total_spent":11.5},{"date":"2025-12-23","start_time":"06:17 PM ET","day_of_week":"Tuesday","hour":18,"num_washers":1,"num_dryers":1,"load_size":"Small","washers_used":["Washer 02"],"dryers_used":["Stack Dryer 14"],"total_spent":5.5},{"date":"2026-01-01","start_time":"11:04 AM ET","day_of_week":"Thursday","hour":11,"num_washers":3,"num_dryers":2,"load_size":"Large","washers_used":["Washer 04","Washer 05","Washer 06"],"dryers_used":["Dryer 15","Stack Dryer 14"],"total_spent":19.5},{"date":"2026-01-16","start_time":"12:18 PM ET","day_of_week":"Friday","hour":12,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 03","Washer 04"],"dryers_used":["Dryer 13","Stack Dryer 14"],"total_spent":11.5},{"date":"2026-01-27","start_time":"05:44 PM ET","day_of_week":"Tuesday","hour":17,"num_washers":2,"num_dryers":1,"load_size":"Medium","washers_used":["Washer 06","Washer 09"],"dryers_used":["Dryer 13"],"total_spent":11.5},{"date":"2026-02-08","start_time":"11:49 AM ET","day_of_week":"Sunday","hour":11,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 04","Washer 06"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":11.5},{"date":"2026-02-22","start_time":"02:13 PM ET","day_of_week":"Sunday","hour":14,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 09","Washer 10"],"dryers_used":["Dryer 11","Dryer 12"],"total_spent":11.5},{"date":"2026-03-05","start_time":"03:56 PM ET","day_of_week":"Thursday","hour":15,"num_washers":2,"num_dryers":2,"load_size":"Medium","washers_used":["Washer 07","Washer 08"],"dryers_used":["Dryer 13","Stack Dryer 14"],"total_spent":11.5},{"date":"2026-03-18","start_time":"03:49 PM ET","day_of_week":"Wednesday","hour":15,"num_washers":4,"num_dryers":3,"load_size":"Large","washers_used":["Washer 03","Washer 04","Washer 06","Washer 07"],"dryers_used":["Dryer 13","Dryer 15","Stack Dryer 14"],"total_spent":28.5},{"date":"2026-03-25","start_time":"01:31 PM ET","day_of_week":"Wednesday","hour":13,"num_washers":1,"num_dryers":0,"load_size":"Small","washers_used":["Washer 06"],"dryers_used":[],"total_spent":3.0},{"date":"2026-03-25","start_time":"04:34 PM ET","day_of_week":"Wednesday","hour":16,"num_washers":0,"num_dryers":1,"load_size":"Dryer Only","washers_used":[],"dryers_used":["Dryer 15"],"total_spent":5.0}]
+};
+
+// ============================================================
+// CHART DEFAULTS
+// ============================================================
+Chart.defaults.color = '#8a8fa8';
+Chart.defaults.borderColor = '#2a2d3e';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+// ============================================================
+// DAY OF WEEK CHART
+// ============================================================
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+new Chart(document.getElementById('dayChart'), {
+  type: 'bar',
+  data: {
+    labels: DAYS.map(d => d.slice(0,3)),
+    datasets: [{
+      data: DAYS.map(d => D.dayCounts[d] || 0),
+      backgroundColor: DAYS.map(d => d === 'Sunday' ? 'rgba(108,142,191,.9)' : 'rgba(108,142,191,.4)'),
+      borderRadius: 6, borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw} sessions` } } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#2a2d3e' } } }
+  }
+});
+
+// ============================================================
+// HOUR CHART
+// ============================================================
+const HOURS = Array.from({length: 24}, (_, i) => i);
+const hLabel = h => h === 0 ? '12am' : h === 12 ? '12pm' : h < 12 ? `${h}am` : `${h-12}pm`;
+const hVals = HOURS.map(h => D.hourCounts[String(h)] || 0);
+new Chart(document.getElementById('hourChart'), {
+  type: 'bar',
+  data: {
+    labels: HOURS.map(hLabel),
+    datasets: [{
+      data: hVals,
+      backgroundColor: hVals.map(v => v > 0 ? 'rgba(126,200,176,.75)' : 'rgba(126,200,176,.1)'),
+      borderRadius: 5, borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw} sessions` } } },
+    scales: { x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } }, y: { grid: { color: '#2a2d3e' } } }
+  }
+});
+
+// ============================================================
+// HEATMAP
+// ============================================================
+(function buildHeatmap() {
+  const matrix = {};
+  for (const d of DAYS) { matrix[d] = {}; for (let h = 0; h < 24; h++) matrix[d][h] = 0; }
+  for (const s of D.sessions) if (matrix[s.day_of_week]) matrix[s.day_of_week][s.hour]++;
+  const allVals = Object.values(matrix).flatMap(d => Object.values(d));
+  const maxVal = Math.max(...allVals);
+  const activeHours = [9,10,11,12,13,14,15,16,17,18,19,20];
+
+  const grid = document.getElementById('heatmap');
+  grid.innerHTML = '<div></div>' + DAYS.map(d => `<div class="hm-hdr">${d.slice(0,3)}</div>`).join('');
+  for (const h of activeHours) {
+    grid.innerHTML += `<div class="hm-lbl">${hLabel(h)}</div>`;
+    for (const d of DAYS) {
+      const v = matrix[d][h];
+      const alpha = v === 0 ? 0.04 : 0.15 + (v / maxVal) * 0.82;
+      const bg = `rgba(108,142,191,${alpha})`;
+      grid.innerHTML += `<div class="hm-cell" style="background:${bg}" title="${d} ${hLabel(h)}: ${v} session${v !== 1 ? 's' : ''}">${v || ''}</div>`;
+    }
+  }
+})();
+
+// ============================================================
+// WASH TYPE CHART
+// ============================================================
+new Chart(document.getElementById('washTypeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Normal ($2.50)', 'Powerwash ($3.00)'],
+    datasets: [{
+      data: [D.normalWashes, D.powerWashes],
+      backgroundColor: ['rgba(108,142,191,.85)', 'rgba(232,125,107,.85)'],
+      borderColor: ['#6c8ebf', '#e87d6b'],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '58%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+      tooltip: { callbacks: { label: c => ` ${c.raw} (${Math.round(c.raw/(D.normalWashes+D.powerWashes)*100)}%)` } }
+    }
+  }
+});
+
+// ============================================================
+// WASHER CHART
+// ============================================================
+const wLabels = Object.keys(D.washerCounts).sort();
+const wVals = wLabels.map(k => D.washerCounts[k]);
+const maxW = Math.max(...wVals);
+new Chart(document.getElementById('washerChart'), {
+  type: 'bar',
+  data: {
+    labels: wLabels,
+    datasets: [{
+      data: wVals,
+      backgroundColor: wVals.map(v => v === maxW ? 'rgba(108,142,191,.9)' : 'rgba(108,142,191,.4)'),
+      borderRadius: 5, borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#2a2d3e' }, beginAtZero: true } }
+  }
+});
+
+// ============================================================
+// DRYER CHART
+// ============================================================
+const dLabels = Object.keys(D.dryerCounts).sort();
+const dVals = dLabels.map(k => D.dryerCounts[k]);
+const maxDr = Math.max(...dVals);
+new Chart(document.getElementById('dryerChart'), {
+  type: 'bar',
+  data: {
+    labels: dLabels,
+    datasets: [{
+      data: dVals,
+      backgroundColor: dVals.map(v => v === maxDr ? 'rgba(196,143,214,.9)' : 'rgba(196,143,214,.4)'),
+      borderRadius: 5, borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#2a2d3e' }, beginAtZero: true } }
+  }
+});
+
+// ============================================================
+// TOP-OFF ROWS
+// ============================================================
+(function buildTopoffs() {
+  const entries = Object.entries(D.topoffDist).map(([k, v]) => [parseInt(k), v]).sort((a, b) => a[0] - b[0]);
+  const maxCnt = Math.max(...entries.map(e => e[1]));
+  const el = document.getElementById('topoffRows');
+  el.innerHTML = entries.map(([n, cnt]) => {
+    const mins = 56 + n * 6;
+    const pct = (cnt / maxCnt) * 100;
+    return `<div class="to-row">
+      <div class="to-lbl">${n} top-off${n!==1?'s':''} → ${mins} min</div>
+      <div class="to-bar"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:rgba(196,143,214,.75)"></div></div></div>
+      <div class="to-cnt purple">${cnt}</div>
+    </div>`;
+  }).join('');
+})();
+
+// ============================================================
+// LOAD SIZE CHART
+// ============================================================
+new Chart(document.getElementById('loadChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Small (1)', 'Medium (2)', 'Large (3–4)', 'Dryer Only'],
+    datasets: [{
+      data: ['Small','Medium','Large','Dryer Only'].map(k => D.loadCounts[k] || 0),
+      backgroundColor: ['rgba(108,142,191,.8)','rgba(126,200,176,.8)','rgba(232,125,107,.8)','rgba(196,143,214,.5)'],
+      borderColor: ['#6c8ebf','#7ec8b0','#e87d6b','#c48fd6'],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '50%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } },
+      tooltip: { callbacks: { label: c => ` ${c.raw} sessions (${Math.round(c.raw/D.totalSessions*100)}%)` } }
+    }
+  }
+});
+
+// ============================================================
+// MACHINE TABLES
+// ============================================================
+function makeMachineTable(id, counts, maxVal, fillColor) {
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  document.getElementById(id).innerHTML =
+    `<thead><tr><th>Machine</th><th style="text-align:right">Uses</th><th style="width:80px"></th><th></th></tr></thead><tbody>` +
+    sorted.map(([m, n], i) => {
+      const pct = (n / maxVal) * 100;
+      const badge = i === 0 ? '<span class="badge b-gold">★ #1</span>' : '';
+      return `<tr>
+        <td>${m}</td>
+        <td style="text-align:right;font-weight:600">${n}</td>
+        <td><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${fillColor}"></div></div></td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+}
+makeMachineTable('washerTbl', D.washerCounts, maxW, 'rgba(108,142,191,.8)');
+makeMachineTable('dryerTbl', D.dryerCounts, maxDr, 'rgba(196,143,214,.8)');
+
+// ============================================================
+// SESSION LOG
+// ============================================================
+const loadColors = {Small:'#6c8ebf',Medium:'#7ec8b0',Large:'#e87d6b','Dryer Only':'#c48fd6'};
+
+function renderSessions(list) {
+  const tbody = document.getElementById('sessionRows');
+  tbody.innerHTML = list.map(s => {
+    const c = loadColors[s.load_size] || '#fff';
+    const w = s.washers_used.length ? s.washers_used.join(', ') : '—';
+    const dr = s.dryers_used.length ? [...new Set(s.dryers_used)].join(', ') : '—';
+    return `<tr>
+      <td style="font-weight:600;white-space:nowrap">${s.date}</td>
+      <td style="color:var(--muted)">${s.day_of_week}</td>
+      <td style="white-space:nowrap">${s.start_time}</td>
+      <td><span class="badge" style="background:${c}22;color:${c}">${s.load_size}</span></td>
+      <td style="color:var(--muted);font-size:.78rem">${w}</td>
+      <td style="color:var(--muted);font-size:.78rem">${dr}</td>
+      <td style="font-weight:600;color:var(--accent2);white-space:nowrap">$${s.total_spent.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sessionCount').textContent = `Showing ${list.length} of ${D.sessions.length} sessions`;
+}
+
+function filter() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const lf = document.getElementById('loadFilter').value;
+  renderSessions(D.sessions.filter(s => {
+    const ok = !q || s.date.includes(q) || s.day_of_week.toLowerCase().includes(q) ||
+      s.washers_used.some(x => x.toLowerCase().includes(q)) ||
+      s.dryers_used.some(x => x.toLowerCase().includes(q)) ||
+      s.load_size.toLowerCase().includes(q);
+    return ok && (!lf || s.load_size === lf);
+  }));
+}
+
+document.getElementById('searchBox').addEventListener('input', filter);
+document.getElementById('loadFilter').addEventListener('change', filter);
+renderSessions(D.sessions);
+</script>
+</body>
+</html>
