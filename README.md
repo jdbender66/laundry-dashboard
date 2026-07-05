@@ -2,6 +2,8 @@
 
 An interactive data dashboard built from 3 years of personal laundry transaction history at 114 Troutman St, Brooklyn (March 2023 – March 2026).
 
+**[→ Live Demo](https://brooklyn-laundry-dashboard.vercel.app/)**
+
 ![Laundry Stats Summary](laundry_stats.png)
 
 ## Overview
@@ -45,9 +47,9 @@ No backend, no build step. Open the HTML file in any browser and it works.
 ## Files
 
 ```
-laundry_dashboard.html   — interactive dashboard (open in any browser)
-laundry_stats.png        — shareable summary infographic
-UserTransactionList.csv  — raw transaction export from the laundry app
+index.html                — interactive dashboard (open in any browser)
+laundry_stats.png         — shareable summary infographic
+UserTransactionList.csv   — raw transaction export from the laundry app
 ```
 
 ## Tech Stack
